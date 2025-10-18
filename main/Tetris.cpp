@@ -1,10 +1,14 @@
 // define a Tetris game class
 
+#include "Tetris.h"
+#include <vector>
+using namespace std;
+
 class Tetris {
 public:
-    bool grid[16][8];
+    vector<vector<bool>> grid;
 
-    // class constructior fills the game grid with 0 (empty grid)
+    // class constructor fills the game grid with 0 (empty grid)
     Tetris() {
         for (int i = 0; i < 16; i++) {
             for (int j = 0; j < 8; j++) {
