@@ -12,17 +12,23 @@ VCC - 5V
 GND - GND 
 */
 
-unsgined int last_time = 0;
+unsigned int last_time = 0;
 
 void IIC_start();
 void IIC_send(unsigned char send_data);
 void IIC_end();
+
+char figs[7] = {'b', 'd', 't', 'j', 'l', 'z', 's'};
 
 // 8x16 matrix LED information
 unsigned char matrix[16] = {0x00, 0x00, 0x00, 0x00,
                             0x00, 0x00, 0x00, 0x00,
                             0x00, 0x00, 0x00, 0x00,
                             0x00, 0x00, 0x00, 0x00};
+
+Tetris* tetris = new Tetris;
+char initial = 'a';
+Tetromino* tetromino = new Tetromino(initial);
 
 void setup() {
   pinMode(IIC_SCL,OUTPUT);
@@ -40,9 +46,6 @@ void setup() {
   // pinMode(11, INPUT_PULLUP);
 }
 
-Tetris* grid = new Tetris;
-Tetromino* tetromino = new Tetromino(2);
-
 void loop() {
     // get user input for tetromino movement
     bool left = !digitalRead(6);
@@ -55,23 +58,33 @@ void loop() {
     // update tetromino state one a second
     if (millis() - last_time >= 1000) {
       // main function code
-      if (left) tetromino -> move(tetris, 'r');
-      if (right) tetromino -> move(tetris, 'l');
-      if (drop) tetromino -> move(tetris, 'x');
-      if (rcw) tetromino -> rotateClockwise(tetris);
-      if (rccw) tetromino -> rotateCounterClockwise(tetris);
+      if (tetromino -> connects(tetris -> grid)) {
+        delete tetromino;
+        tetromino = new Tetromino();
+      }
+
+
+      if (left) tetromino -> move(tetris -> grid, 'r');
+      if (right) tetromino -> move(tetris -> grid, 'l');
+      if (drop) tetromino -> move(tetris -> grid, 'x');
+      if (rcw) tetromino -> rotateClockwise();
+      if (rccw) tetromino -> rotateCounterClockwise();
+
+
+
+      tetromino -> update(tetris -> grid);
       
       last_time = millis();
     }
 
     // update the grid
-    grid -> update();
+    tetris -> update();
 
     for (int i = 0; i < 16; i++) {
       for (int j = 0; j < 8l j++) {
         // check whether grid and matrix states are different
         if ((tetris -> grid[i][j] && (matrix[i] & (1 << j)) != 0) ||
-            !tetris -> grid[i][j] && ((t[i] >> j) & 0x01)) {
+            !tetris -> grid[i][j] && ((matrix[i] >> j) & 0x01)) {
               // flip a bit if there is unmatching between grid and matrix
               matrix[i] ^= (1 << j);
             }
@@ -135,4 +148,7 @@ void IIC_end() {
   delayMicroseconds(3);
   digitalWrite(IIC_SDA,HIGH);
   delayMicroseconds(3);
+
+  delete tetromino;
+  delete tetris;
 }

@@ -27,25 +27,36 @@ bool threePiece[5][3][3] = {{{0, 1, 0},
 // 4 piece - i
 
 #include "Tetromino.h"
-#include <vector>
-using namespace std;
 
 class Tetromino {
 public:
     int n, x, y;
-    vector<vector<bool>> f;
+    bool** f;
 
-    Tetromino() {}
+    Tetromino() : n(0), x(0), y(0), f(nullptr) {} // initializer list for consturoctor
 
     Tetromino(int size) {
         n = size;
         y = 16 - size;
         x = 4 - size / 2;
 
+        bool** g = new bool*[n];
+        for (int i = 0; i < n; i++) {
+            g[i] = new bool[n];
+            for (int j = 0; j < n; j++) {
+                g[i][j] = 0;
+            }
+        }
+
         switch(n) {
             case 2:
-                for (int k = 0; k < n; k++) f[k][k] = 1;
+                for (int i = 0; i < n; i++) {
+                    for (int j = 0; j < n; j++) {
+                        f[i][j] = 1;
+                    }
+                }
                 break;
+
             default:
                 for (int i = 0; i < n; i++) {
                     for (int j = 0; j < n; j++) {
@@ -54,12 +65,23 @@ public:
                 }
 
         }
+
+        f = g;
     }
 
-    Tetromino(char fig) {
+    Tetromino(char fig) : Tetromino(3) { // constructor delegation
+        if (fig == 'o') {
+            *this = Tetromino(2);
+            return;
+        }
+        if (fig == 'i') {
+            *this = Tetromino(4);
+            return;
+        }
+
         n = 3;
         y = 13;
-        x = 2;
+        x = 3;
 
         int pos;
         switch(fig) {
@@ -79,22 +101,27 @@ public:
                 pos = 0;
         }
 
+        bool** g = new bool*[n];
         for (int i = 0; i < n; i++) {
+            g[i] = new bool[n];
             for (int j = 0; j < n; j++) {
                 // assign one of 5 3x3 shapes to a Tetromino
                 f[i][j] = threePiece[pos][i][j];
             }
         }
+
+        f = g;
     }
 
     // destructor
     ~Tetromino() {
-        for (int k = 0; k < n; k++) f[k][k] = 0;
+        for (int k = 0; k < n; k++) delete [] f[k];
+        delete [] f;
     }
 
     // check whether a tetromino is connected (has fallen)
     // posible situations - 1. touches ground, 2. touched another piece
-    bool connects(vector<vector<bool>> grid) {
+    bool connects(bool** grid) {
         if (n == 4) {
             connectsI(grid);
             return;
@@ -113,35 +140,77 @@ public:
     }
 
     // specific connects() case for I shape
-    bool connectsI(vector<vector<bool>> grid) {
-        for (int posX = 0; posX < n; posX++) {
-            if (y == 0) {
-                if (f[0][0]) return true;
-                else {
-                    for (int posY = 1; posY < n; posY++) {
-                        f[posY - 1][posX] = f[posY][posX];
-                    }
-                    f[n - 1][posX] = 0;
-                }
-            }
-
-            for (int posY = 0; posY < n; posY++) {
-                if (f[posY][x + posX] && grid[y + posY - 1][posX]) return true;
-                if (f[posY][posX] && !f[posY - 1][posX] 
-                    && grid[y + posY - 1][x + posX]) return true;
+    bool connectsI(bool** grid) {
+        // check case if I is horizontal and in first row (f[0][0] == 0)
+        for (int posX = 0; posX < n; posX) {
+            if (f[0][posX] && f[0][posX + 1]) {
+                if (y == 0 || grid[y - 1][0]) return true;
             }
         }
+
+        // check case if I is vertical (only one pixel has posY == 0)
+        for (int posX = 0; posX < n; posX++) {
+            if (f[0][posX] && f[1][posX]) {
+                if (y == 0 || grid[y - 1][x + posX]) return true;
+            }
+        }
+
+        // check case if I is horizontal and not first row
+        for (int posY = 1; posY < n; posY++) {
+            if (f[posY][0] && f[posY][1]) {
+                for (int posX = 0; posX < n; posX++) {
+                    if (grid[y + posY - 1][x + posX]) return true;
+                    else {
+                        shift('d');
+                    }
+                }
+            }
+        }
+
         return false;
+    }
+
+    void shift(char dir) {
+        switch(dir) {
+            case 'l':
+                for (int posY = 0; posY < n; posY++) {\
+                    for (int posX = 1; posX < n; posX++) {
+                        f[posY][posX - 1] = f[posY][posX];
+                    }
+                    f[posY][n - 1] = 0;
+                }
+
+                break;
+
+            case 'r':
+                for (int posY = 0; posY < n; posY++) {\
+                        for (int posX = n - 2; posX >= 0; posX--) {
+                            f[posY][posX + 1] = f[posY][posX];
+                        }
+                        f[posY][0] = 0;
+                    }
+
+                break;
+
+            default:
+                for (int posY = 1; posY < n; posY++) {\
+                    for (int posX = 0; posX < n; posX++) {
+                        f[posY - 1][posX] = f[posY][posX];
+                    }
+                    f[n - 1][0] = 0;
+                }
+
+        }
     }
 
 
     // move a tetromino on the grid (left, right, down, drop)
     // check whether a movement is possible in said direction and perform it if so
-    void move(vector<vector<bool>> &grid, char dir) {
-        if (n == 4) {
+    void move(bool** grid, char dir) {
+        /* if (n == 4) {
             moveI(grid, dir);
             return;
-        }
+        } */
 
         switch(dir) {
             case 'l':
@@ -198,16 +267,29 @@ public:
             default:
                 while(!connects(grid)) {
                     move(grid, 'd');
+                    y--;
                 }
         }
     }
     
+    /*
     // specific move() case for I shape
-    bool moveI(vector<vector<bool>> grid, char dir) {
+    void moveI(bool** grid, char dir) {
         switch(dir) {
+            case 'l':
+                
+
+                break;
+
+            case 'r':
+
+            case 'd':
+
+            default:
 
         }
     }
+        */
 
     void rotateClockwise() {
         int t;
@@ -238,5 +320,14 @@ public:
     void flip() {
         rotateClockwise();
         rotateClockwise();
+    }
+
+    // pass tetromino position to the grid (game logic)
+    void update(bool** grid) {
+        for (int posY = 0; posY < n; posY++) {
+            for (int posX = 0; posX < n; posX++) {
+                grid[y + posY][x + posX] = f[posY][posX];
+            }
+        }
     }
 };

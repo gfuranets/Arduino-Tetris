@@ -1,12 +1,9 @@
 #ifndef TETRIS_H
 #define TETRIS_H
 
-#include <vector>
-using namespace std;
-
 class Tetris {
 public:
-    vector<vector<bool>> grid;
+    bool** grid;
 
     Tetris();
     bool full(int row);
