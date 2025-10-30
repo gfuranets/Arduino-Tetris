@@ -9,8 +9,8 @@ public:
     bool** f;
 
     Tetromino();
-    Tetromino(int size);
     Tetromino(char fig);
+    ~Tetromino();
 
     bool connects(bool** grid);
     bool connectsI(bool** grid);

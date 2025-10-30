@@ -12,13 +12,15 @@ VCC - 5V
 GND - GND 
 */
 
-unsigned int last_time = 0;
-
 void IIC_start();
 void IIC_send(unsigned char send_data);
 void IIC_end();
 
-char figs[7] = {'b', 'd', 't', 'j', 'l', 'z', 's'};
+// vairable for action cycle in loop() function
+unsigned int last_time = 0;
+
+// possible tetromino shapes
+char figs[7] = {'o', 'i', 't', 'j', 'l', 'z', 's'};
 
 // 8x16 matrix LED information
 unsigned char matrix[16] = {0x00, 0x00, 0x00, 0x00,
@@ -26,8 +28,9 @@ unsigned char matrix[16] = {0x00, 0x00, 0x00, 0x00,
                             0x00, 0x00, 0x00, 0x00,
                             0x00, 0x00, 0x00, 0x00};
 
+// game and piece objects, as well as initial piece shape
+char initial = figs[random(8)];
 Tetris* tetris = new Tetris;
-char initial = 'a';
 Tetromino* tetromino = new Tetromino(initial);
 
 void setup() {
@@ -58,22 +61,28 @@ void loop() {
     // update tetromino state one a second
     if (millis() - last_time >= 1000) {
       // main function code
+
+      // create a new tetromino if the current one connects
       if (tetromino -> connects(tetris -> grid)) {
         delete tetromino;
-        tetromino = new Tetromino();
+        tetromino = new Tetromino(figs[random(7)]);
       }
-
-
-      if (left) tetromino -> move(tetris -> grid, 'r');
-      if (right) tetromino -> move(tetris -> grid, 'l');
+    
+      // check for user actions (button presses)
+      if (left) tetromino -> move(tetris -> grid, 'l');
+      if (right) tetromino -> move(tetris -> grid, 'r');
       if (drop) tetromino -> move(tetris -> grid, 'x');
       if (rcw) tetromino -> rotateClockwise();
       if (rccw) tetromino -> rotateCounterClockwise();
-
-
-
-      tetromino -> update(tetris -> grid);
       
+      if (!left && !right) 
+      tetromino -> move(tetris -> grid, 'd');
+
+      // 
+      tetromino -> update(tetris -> grid);
+      tetris -> update();
+      
+      // repeat the cycle
       last_time = millis();
     }
 
@@ -81,7 +90,7 @@ void loop() {
     tetris -> update();
 
     for (int i = 0; i < 16; i++) {
-      for (int j = 0; j < 8l j++) {
+      for (int j = 0; j < 8; j++) {
         // check whether grid and matrix states are different
         if ((tetris -> grid[i][j] && (matrix[i] & (1 << j)) != 0) ||
             !tetris -> grid[i][j] && ((matrix[i] >> j) & 0x01)) {

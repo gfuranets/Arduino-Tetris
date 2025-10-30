@@ -3,7 +3,7 @@
 
 class Tetris {
 public:
-    bool** grid;
+    bool grid[16][8];
 
     Tetris();
     bool full(int row);
